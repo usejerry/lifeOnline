@@ -17,7 +17,7 @@ All three files remain ignored by Git because they may contain credentials.
 `ConfigModule.forRoot()` selects the file from `NODE_ENV`:
 
 - `NODE_ENV=development` loads `.env.dev` first, then falls back to `.env`.
-- `NODE_ENV=production` loads `.env.prod` first, then falls back to `.env`.
+- `NODE_ENV=production` loads only `.env.prod`, preventing local credentials from being used in production.
 - Any other value loads `.env`.
 
 The existing YAML loader is removed from `AppModule`. Database environment variables are validated with Joi.

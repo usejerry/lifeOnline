@@ -4,7 +4,7 @@
 
 **Goal:** Add default, development, and production dotenv files and make Nest select the correct file without loading `config.yml`.
 
-**Architecture:** Keep the existing `.env` values untouched. Add local-only `.env.dev` and `.env.prod` files, ignore both in Git, and configure `ConfigModule` to select them from `NODE_ENV` with `.env` as the fallback.
+**Architecture:** Keep the existing `.env` values untouched. Add local-only `.env.dev` and `.env.prod` files, ignore both in Git, and configure `ConfigModule` to select them from `NODE_ENV`. Development may fall back to `.env`; production must not fall back to local credentials.
 
 **Tech Stack:** NestJS 11, `@nestjs/config`, Joi, dotenv files
 
@@ -74,7 +74,7 @@ ConfigModule.forRoot({
   isGlobal: true,
   envFilePath:
     process.env.NODE_ENV === 'production'
-      ? ['.env.prod', '.env']
+      ? '.env.prod'
       : process.env.NODE_ENV === 'development'
         ? ['.env.dev', '.env']
         : '.env',
