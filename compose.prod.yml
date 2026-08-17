@@ -34,7 +34,9 @@ services:
       - logs_data:/app/logs
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: ${FRONTEND_CONTEXT:-../lifeOnline-h5}
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}

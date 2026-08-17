@@ -1,4 +1,14 @@
 {$SITE_ADDRESS} {
   encode zstd gzip
-  reverse_proxy app:3000
+
+  @backend path /api/* /uploads/* /_AMapService/*
+  handle @backend {
+    reverse_proxy app:3000
+  }
+
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
 }
