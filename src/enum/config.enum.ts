@@ -1,0 +1,17 @@
+export enum ConfigEnum {
+  DB_HOST = 'DB_HOST',
+  DB_PORT = 'DB_PORT',
+  DB_USER = 'DB_USER',
+  DB_PASSWORD = 'DB_PASSWORD',
+  DB_DATABASE = 'DB_DATABASE',
+  DB = 'DB',
+  MYSQL = 'mysql1',
+  JWT_SECRET = 'JWT_SECRET',
+  AMAP_SECURITY_CODE = 'AMAP_SECURITY_CODE',
+  AMAP_WEB_SERVICE_KEY = 'AMAP_WEB_SERVICE_KEY',
+}
+
+export enum LogEnum {
+  LOG_ON = 'LOG_ON',
+  LOG_LEVEL = 'LOG_LEVEL',
+}

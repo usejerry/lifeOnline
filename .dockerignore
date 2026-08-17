@@ -1,0 +1,13 @@
+.git
+.vscode
+node_modules
+dist
+coverage
+logs
+uploads
+data
+.env*
+!.env.prod.example
+docs
+test
+*.log
