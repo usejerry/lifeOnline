@@ -12,6 +12,11 @@ import { LocationMode, Scene } from './quest.enums';
 import { Quest } from './quest.entity';
 import { INITIAL_QUESTS } from './quest.seed';
 
+const SHANGXIAJIU_COORDINATES = {
+  longitude: 113.24794,
+  latitude: 23.11467,
+};
+
 @Injectable()
 export class QuestService implements OnModuleInit {
   constructor(
@@ -117,9 +122,39 @@ export class QuestService implements OnModuleInit {
       .orderBy('quest.sortOrder', 'ASC')
       .getMany();
 
+    const nearby = await this.findNearbyItems(quests, query);
+    const hasNearbyQuests = nearby.items.length > 0;
+    const result = hasNearbyQuests
+      ? nearby
+      : await this.findNearbyItems(quests, {
+          ...query,
+          ...SHANGXIAJIU_COORDINATES,
+          cityAdcode: '440100',
+        });
+
+    return {
+      items: result.items,
+      context: {
+        cityAdcode: result.location?.cityAdcode ?? null,
+        cityName: result.location?.cityName ?? null,
+        weather: result.weather,
+        mapWebServiceConfigured: this.amapService.configured,
+        hasNearbyQuests,
+        mapCenter: hasNearbyQuests
+          ? { longitude: query.longitude, latitude: query.latitude }
+          : SHANGXIAJIU_COORDINATES,
+      },
+    };
+  }
+
+  private async findNearbyItems(quests: Quest[], query: NearbyQuestQueryDto) {
     const location = query.cityAdcode
       ? { cityAdcode: query.cityAdcode, cityName: null, address: null }
       : await this.amapService.reverseGeocode(query.longitude, query.latitude);
+    // 高德无法识别当前坐标时直接触发广州回退，避免继续请求空城市或境外 POI。
+    if (!query.cityAdcode && !location) {
+      return { items: [], location: null, weather: null };
+    }
     const weather = location?.cityAdcode
       ? await this.amapService.getWeather(location.cityAdcode)
       : null;
@@ -188,15 +223,7 @@ export class QuestService implements OnModuleInit {
     }
 
     items.sort((a, b) => Number(a.distanceM) - Number(b.distanceM));
-    return {
-      items,
-      context: {
-        cityAdcode: location?.cityAdcode ?? null,
-        cityName: location?.cityName ?? null,
-        weather,
-        mapWebServiceConfigured: this.amapService.configured,
-      },
-    };
+    return { items, location, weather };
   }
 
   private baseQuery(): SelectQueryBuilder<Quest> {

@@ -13,9 +13,9 @@ interface AmapResponse<T> {
 }
 
 interface RegeocodeResult {
-  formatted_address: string;
+  formatted_address: string | string[];
   addressComponent: {
-    adcode: string;
+    adcode: string | string[];
     city: string | string[];
     province: string;
   };
@@ -58,11 +58,14 @@ export class AmapService {
     const regeocode = result?.regeocode;
     if (!regeocode) return null;
     const component = regeocode.addressComponent;
+    if (typeof component.adcode !== 'string' || !component.adcode) return null;
     const city = Array.isArray(component.city)
       ? component.province
       : component.city;
     return {
-      address: regeocode.formatted_address,
+      address: Array.isArray(regeocode.formatted_address)
+        ? null
+        : regeocode.formatted_address,
       cityAdcode: component.adcode,
       cityName: city,
     };
