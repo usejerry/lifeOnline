@@ -31,6 +31,22 @@
 $ pnpm install
 ```
 
+## Local configuration
+
+Create the local environment file and start MySQL:
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+The development database is available on `127.0.0.1:3306`. Adminer is
+available at <http://localhost:8090>; use server `db`, user `root`, and
+password `example` when signing in from Adminer.
+
+The committed `.env.example` contains development-only defaults. Keep real
+credentials in the ignored `.env` or `.env.prod` files.
+
 ## Compile and run the project
 
 ```bash

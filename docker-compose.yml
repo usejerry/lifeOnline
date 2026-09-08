@@ -1,14 +1,28 @@
 services:
   db:
-    image: mysql
+    image: mysql:8.4
     ports:
       - 3306:3306
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: life_online
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -pexample --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   adminer:
     image: adminer
     restart: always
     ports:
       - 8090:8080
+
+volumes:
+  mysql_data:
