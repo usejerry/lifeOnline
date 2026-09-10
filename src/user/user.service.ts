@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { AuthSessionService } from '../auth/auth-session.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
@@ -20,10 +20,10 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly jwtService: JwtService,
+    private readonly sessions: AuthSessionService,
   ) {}
 
-  async login({ account, password, rememberMe }: LoginDto) {
+  async login({ account, password, rememberMe }: LoginDto, userAgent = '') {
     const normalizedAccount = account.trim().toLowerCase();
     const user = await this.userRepository.findOne({
       where: [{ username: normalizedAccount }, { email: normalizedAccount }],
@@ -81,11 +81,7 @@ export class UserService {
     await this.userRepository.save(user);
 
     return {
-      accessToken: await this.jwtService.signAsync(
-        { sub: user.id, username: user.username },
-        { expiresIn: rememberMe ? 604800 : 7200 },
-      ),
-      expiresIn: rememberMe ? 604800 : 7200,
+      ...(await this.sessions.create(user, rememberMe, userAgent)),
       user: {
         id: user.id,
         username: user.username,
@@ -168,7 +164,9 @@ export class UserService {
       throw new NotFoundException(`User ${id} not found`);
     }
 
-    return this.userRepository.save(existingUser);
+    const saved = await this.userRepository.save(existingUser);
+    if (user.password) await this.sessions.revokeAll(id);
+    return saved;
   }
 
   async deleteUser(id: number) {

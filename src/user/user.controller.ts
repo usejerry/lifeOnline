@@ -10,21 +10,38 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { CreateUserDto, LoginDto, RegisterDto } from './user.dto';
 import { UserService } from './user.service';
+import type { Request, Response } from 'express';
+import { AuthCookieService } from '../auth/auth-cookie.service';
 
 @Controller('user')
 export class UserController {
   private readonly logger = new Logger(UserController.name);
-  constructor(private readonly userService: UserService) {
+  constructor(
+    private readonly userService: UserService,
+    private readonly cookies: AuthCookieService,
+  ) {
     this.logger.log('UserController constructor');
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() loginDto: LoginDto) {
-    return this.userService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    this.cookies.assertRequest(request);
+    const { refreshToken, session, ...result } = await this.userService.login(
+      loginDto,
+      request.get('user-agent') ?? '',
+    );
+    this.cookies.set(response, refreshToken, session);
+    return result;
   }
 
   @Post('register')

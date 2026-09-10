@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { AuthSessionService } from './auth-session.service';
 
 export interface JwtUser {
   sub: number;
+  sid: string;
   username: string;
 }
 
@@ -18,7 +20,10 @@ export interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly sessions: AuthSessionService,
+  ) {}
 
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -28,11 +33,20 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('请先登录');
     }
 
+    let payload: JwtUser;
     try {
-      request.user = await this.jwtService.verifyAsync<JwtUser>(token);
-      return true;
-    } catch {
-      throw new UnauthorizedException('登录状态已过期');
+      payload = await this.jwtService.verifyAsync<JwtUser>(token, {
+        algorithms: ['HS256'],
+      });
+    } catch (error) {
+      const expired =
+        error instanceof Error && error.name === 'TokenExpiredError';
+      throw new UnauthorizedException({
+        code: expired ? 'ACCESS_TOKEN_EXPIRED' : 'ACCESS_TOKEN_INVALID',
+        message: expired ? '访问凭证已过期' : '访问凭证无效',
+      });
     }
+    request.user = await this.sessions.validate(payload.sub, payload.sid);
+    return true;
   }
 }

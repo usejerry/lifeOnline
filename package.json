@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:auth": "pnpm build && node --test test/auth.integration.cjs",
     "generate:models": "typeorm-model-generator -h 127.0.0.1 -p 3306 -d testdb -u root -x example -e mysql -o ./src/entities --strictMode !"
   },
   "dependencies": {
