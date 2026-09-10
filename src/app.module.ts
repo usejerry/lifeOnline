@@ -17,6 +17,8 @@ import { QuestRecordModule } from './quest-record/quest-record.module';
 import { LocationModule } from './location/location.module';
 import { ThemeModule } from './theme/theme.module';
 import { QuestLibraryModule } from './quest-library/quest-library.module';
+import { SignInModule } from './sign-in/sign-in.module';
+import { IntegralModule } from './integral/integral.module';
 
 @Global()
 @Module({
@@ -59,6 +61,8 @@ import { QuestLibraryModule } from './quest-library/quest-library.module';
     RangeModule,
     LogsModule,
     RolesModule,
+    SignInModule,
+    IntegralModule,
   ],
   controllers: [],
   providers: [

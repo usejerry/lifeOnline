@@ -13,6 +13,8 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
     username: configService.getOrThrow<string>(ConfigEnum.DB_USER),
     password: configService.getOrThrow<string>(ConfigEnum.DB_PASSWORD),
     database: configService.getOrThrow<string>(ConfigEnum.DB_DATABASE),
+    // MySQL 容器用 UTC 保存 DATETIME；读取和写入 Date 时也按 UTC 转换。
+    timezone: 'Z',
     autoLoadEntities: true,
     entities: [Logs, Roles],
     synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
