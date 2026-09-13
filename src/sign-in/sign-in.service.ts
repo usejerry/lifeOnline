@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserSignIn } from './user-sign-in.entity';
 import { QuerySignInRecordsDto } from './sign-in.dto';
+import { GrowthService } from '../growth/growth.service';
+import { GrowthBusinessType ,GrowthAssetType} from '../integral/integral-record.entity';
 
 @Injectable()
 export class SignInService {
   constructor(
     @InjectRepository(UserSignIn)
     private readonly userSignInRepository: Repository<UserSignIn>,
+    private readonly growthService: GrowthService,
   ) {}
 
   async signIn(userId: number) {
@@ -17,11 +20,17 @@ export class SignInService {
     if (signedIn) {
       return false;
     }
+    try {   
     // checkInDate 是业务日期，统一按北京时间计算。
-    await this.userSignInRepository.save({
+    const record = await this.userSignInRepository.save({
       userId,
       checkInDate: this.todayInShanghai(),
     });
+    // 签到成功后，添加积分
+    await this.growthService.addPoints(userId, record.id.toString(), GrowthBusinessType.SIGN_IN,100);
+    } catch (error) {
+      throw error;
+    }
     return '签到成功';
   }
   private todayInShanghai(now = new Date()) {

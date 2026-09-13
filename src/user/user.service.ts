@@ -11,6 +11,7 @@ import { timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 import { CreateUserDto, LoginDto } from './user.dto';
 import { User } from './user.entity';
+import { GrowthService } from '../growth/growth.service';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME_MS = 15 * 60 * 1000;
@@ -21,6 +22,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly sessions: AuthSessionService,
+    private readonly growthService: GrowthService,
   ) {}
 
   async login({ account, password, rememberMe }: LoginDto, userAgent = '') {
@@ -146,6 +148,8 @@ export class UserService {
         passwordChangedAt: new Date(),
       }),
     );
+    // 初始化用户成长
+    await this.growthService.initUserGrowth(created.id);
     return { id: created.id, username: created.username, email: created.email };
   }
 

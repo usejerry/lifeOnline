@@ -8,6 +8,7 @@ import {
 import { User } from '../user/user.entity';
 import { UpdatePreferenceDto } from './update-preference.dto';
 import { UserPreference } from './user-preference.entity';
+import { GrowthService } from '../growth/growth.service';
 
 @Injectable()
 export class MeService {
@@ -18,20 +19,21 @@ export class MeService {
     private readonly preferenceRepository: Repository<UserPreference>,
     @InjectRepository(QuestRecord)
     private readonly recordRepository: Repository<QuestRecord>,
+    private readonly growthService: GrowthService,
   ) {}
 
   async getMe(userId: number) {
-    const [user, preference, completedQuestCount] = await Promise.all([
+    const [user, preference, completedQuestCount, growth] = await Promise.all([
       this.userRepository.findOneBy({ id: userId }),
       this.preferenceRepository.findOneBy({ userId }),
       this.recordRepository.countBy({
         userId,
         status: QuestRecordStatus.COMPLETED,
       }),
+      this.growthService.getGrowth(userId), // 获取用户成长
     ]);
 
     if (!user) throw new NotFoundException('用户不存在');
-
     return {
       id: user.id,
       username: user.username,
@@ -45,6 +47,10 @@ export class MeService {
             onboardedAt: preference.onboardedAt,
           }
         : null,
+      growth:growth?.pointsBalance? {
+        pointsBalance: growth.pointsBalance,
+        level: growth.level,
+      } : null,
       stats: { completedQuestCount },
     };
   }

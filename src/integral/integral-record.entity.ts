@@ -24,6 +24,7 @@ export enum GrowthBusinessType {
   EXCHANGE = 'exchange',
 }
 
+
 @Entity('growth_ledger')
 @Unique('uq_growth_ledger_business', [
   'userId',

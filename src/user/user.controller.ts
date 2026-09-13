@@ -17,6 +17,7 @@ import { CreateUserDto, LoginDto, RegisterDto } from './user.dto';
 import { UserService } from './user.service';
 import type { Request, Response } from 'express';
 import { AuthCookieService } from '../auth/auth-cookie.service';
+import { GrowthService } from '../growth/growth.service';
 
 @Controller('user')
 export class UserController {
@@ -24,6 +25,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly cookies: AuthCookieService,
+    private readonly growthService: GrowthService,
   ) {
     this.logger.log('UserController constructor');
   }

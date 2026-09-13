@@ -19,6 +19,7 @@ import { ThemeModule } from './theme/theme.module';
 import { QuestLibraryModule } from './quest-library/quest-library.module';
 import { SignInModule } from './sign-in/sign-in.module';
 import { IntegralModule } from './integral/integral.module';
+import { GrowthModule } from './growth/growth.module';
 
 @Global()
 @Module({
@@ -63,6 +64,7 @@ import { IntegralModule } from './integral/integral.module';
     RolesModule,
     SignInModule,
     IntegralModule,
+    GrowthModule,
   ],
   controllers: [],
   providers: [
