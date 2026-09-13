@@ -57,6 +57,7 @@ export class GrowthService {
         .into(UserGrowth)
         .values({ userId, pointsBalance: 0, totalExp: 0, level: 1 })
         .orIgnore()
+        .updateEntity(false)
         .execute();
 
       const updateResult = await userGrowthRepository.increment(
