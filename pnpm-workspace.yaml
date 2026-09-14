@@ -1,3 +1,4 @@
 allowBuilds:
   sqlite3: true
   unrs-resolver: false
+  msgpackr-extract: true
