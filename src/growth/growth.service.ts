@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { UserGrowth } from './user-growth.entity';
 import {
   GrowthAssetType,
@@ -42,13 +42,14 @@ export class GrowthService {
     businessId: string,
     businessType: GrowthBusinessType,
     points: number,
+    manager?: EntityManager,
   ) {
     if (!Number.isInteger(points) || points <= 0) {
       throw new BadRequestException('积分数量必须是正整数');
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const userGrowthRepository = manager.getRepository(UserGrowth);
+    const execute = async (transactionManager: EntityManager) => {
+      const userGrowthRepository = transactionManager.getRepository(UserGrowth);
 
       // 兼容历史用户：不存在时初始化，并发创建时忽略唯一键冲突。
       await userGrowthRepository
@@ -81,10 +82,16 @@ export class GrowthService {
           businessId,
           amount: points,
         },
-        manager,
+        transactionManager,
       );
 
       return userGrowth;
-    });
+    };
+
+    return manager
+      ? execute(manager)
+      : this.dataSource.transaction((transactionManager) =>
+          execute(transactionManager),
+        );
   }
 }

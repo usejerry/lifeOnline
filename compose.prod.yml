@@ -26,12 +26,33 @@ services:
       NODE_ENV: production
       DB_HOST: db
       DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   caddy:
     build:
@@ -66,5 +87,6 @@ volumes:
   mysql_data:
   uploads_data:
   logs_data:
+  redis_data:
   caddy_data:
   caddy_config:

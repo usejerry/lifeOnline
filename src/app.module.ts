@@ -2,6 +2,8 @@ import { Module, Logger, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -20,6 +22,8 @@ import { QuestLibraryModule } from './quest-library/quest-library.module';
 import { SignInModule } from './sign-in/sign-in.module';
 import { IntegralModule } from './integral/integral.module';
 import { GrowthModule } from './growth/growth.module';
+import { MessageModule } from './message/message.module';
+import { ConfigEnum } from './enum/config.enum';
 
 @Global()
 @Module({
@@ -39,6 +43,9 @@ import { GrowthModule } from './growth/growth.module';
         DB_PASSWORD: Joi.string().allow('').required(),
         DB_DATABASE: Joi.string().required(),
         DB_SYNCHRONIZE: Joi.boolean().default(false),
+        REDIS_HOST: Joi.string().default('127.0.0.1'),
+        REDIS_PORT: Joi.number().port().default(6379),
+        REDIS_PASSWORD: Joi.string().allow('').optional(),
         JWT_SECRET: Joi.string().min(64).required(),
         LOG_ON: Joi.boolean().default(true),
         LOG_LEVEL: Joi.string()
@@ -51,6 +58,20 @@ import { GrowthModule } from './growth/growth.module';
       }),
     }),
     TypeOrmModule.forRootAsync(typeOrmConfig),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        prefix: 'life-online',
+        connection: {
+          host: configService.get<string>(ConfigEnum.REDIS_HOST, '127.0.0.1'),
+          port: configService.get<number>(ConfigEnum.REDIS_PORT, 6379),
+          password:
+            configService.get<string>(ConfigEnum.REDIS_PASSWORD) || undefined,
+          // Worker 必须持续等待 Redis 恢复，不能因为一次网络抖动耗尽请求重试。
+          maxRetriesPerRequest: null,
+        },
+      }),
+    }),
     AuthModule,
     UserModule,
     MeModule,
@@ -65,6 +86,7 @@ import { GrowthModule } from './growth/growth.module';
     SignInModule,
     IntegralModule,
     GrowthModule,
+    MessageModule,
   ],
   controllers: [],
   providers: [

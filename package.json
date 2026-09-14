@@ -22,6 +22,7 @@
     "generate:models": "typeorm-model-generator -h 127.0.0.1 -p 3306 -d testdb -u root -x example -e mysql -o ./src/entities --strictMode !"
   },
   "dependencies": {
+    "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
@@ -29,8 +30,10 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.3",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.3.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "ioredis": "^5.11.1",
     "joi": "^18.2.3",
     "js-yaml": "^5.2.1",
     "loadsh": "^0.0.4",
