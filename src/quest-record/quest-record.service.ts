@@ -7,7 +7,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
+import { QuestRecordExpiryService } from './quest-record-expiry.service';
 import { Quest } from '../quest/quest.entity';
 import { LocationMode } from '../quest/quest.enums';
 import { AmapService } from '../location/amap.service';
@@ -34,9 +35,11 @@ export class QuestRecordService {
     private readonly locationService: LocationService,
     private readonly amapService: AmapService,
     private readonly libraryService: QuestLibraryService,
+    private readonly expiryService: QuestRecordExpiryService,
   ) {}
 
   async accept(userId: number, dto: CreateQuestRecordDto) {
+    await this.expiryService.expire(userId);
     const [quest, active] = await Promise.all([
       this.questRepository.findOneBy({ id: dto.questId, enabled: true }),
       this.recordRepository.findOneBy({
@@ -94,6 +97,11 @@ export class QuestRecordService {
             }
           : null;
 
+    // datetime 按秒存储；三个时间使用同一基准，截止时间保存后不随模板变化。
+    const createdAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+    const deadlineAt = new Date(
+      createdAt.getTime() + (quest.durationMinutes + 30) * 60_000,
+    );
     const saved = await this.recordRepository.save(
       this.recordRepository.create({
         userId,
@@ -108,7 +116,9 @@ export class QuestRecordService {
         weatherRuleSnapshot: quest.weatherRule,
         weeklyThemeIdSnapshot: quest.weeklyThemeId,
         status: QuestRecordStatus.ACCEPTED,
-        acceptedAt: new Date(),
+        createdAt,
+        acceptedAt: createdAt,
+        deadlineAt,
       }),
     );
     await this.libraryService.clearSavedAfterAccept(userId, quest.id);
@@ -116,6 +126,7 @@ export class QuestRecordService {
   }
 
   async findActive(userId: number) {
+    await this.expiryService.expire(userId);
     const record = await this.recordRepository.findOne({
       where: { userId, status: QuestRecordStatus.ACCEPTED },
       relations: { quest: true },
@@ -125,6 +136,7 @@ export class QuestRecordService {
   }
 
   async findAll(userId: number, query: QueryQuestRecordDto) {
+    await this.expiryService.expire(userId);
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
     const [items, total] = await this.recordRepository.findAndCount({
@@ -142,6 +154,7 @@ export class QuestRecordService {
   }
 
   async abandon(id: number, userId: number) {
+    await this.expiryService.expire(userId);
     const result = await this.recordRepository.update(
       { id, userId, status: QuestRecordStatus.ACCEPTED },
       { status: QuestRecordStatus.ABANDONED, abandonedAt: new Date() },
@@ -158,6 +171,7 @@ export class QuestRecordService {
     dto: CompleteQuestRecordDto,
     imageUrl?: string,
   ) {
+    await this.expiryService.expire(userId);
     const record = await this.recordRepository.findOneBy({
       id,
       userId,
@@ -224,8 +238,23 @@ export class QuestRecordService {
       }
     }
 
+    // 地图/天气请求可能跨过截止时间，最终写入必须原子校验仍未到期。
+    const completedAt = new Date();
     const result = await this.recordRepository.update(
-      { id, userId, status: QuestRecordStatus.ACCEPTED },
+      [
+        {
+          id,
+          userId,
+          status: QuestRecordStatus.ACCEPTED,
+          deadlineAt: MoreThan(completedAt),
+        },
+        {
+          id,
+          userId,
+          status: QuestRecordStatus.ACCEPTED,
+          deadlineAt: IsNull(),
+        },
+      ],
       {
         status: QuestRecordStatus.COMPLETED,
         note: dto.note?.trim() || null,
@@ -236,10 +265,13 @@ export class QuestRecordService {
         completedCityAdcode: location?.cityAdcode ?? null,
         completedCityName: location?.cityName ?? null,
         weatherSnapshot: weather,
-        completedAt: new Date(),
+        completedAt,
       },
     );
-    if (!result.affected) this.invalidState();
+    if (!result.affected) {
+      await this.expiryService.expire(userId);
+      this.invalidState();
+    }
     return this.toResponse(
       (await this.recordRepository.findOneBy({ id, userId }))!,
     );
@@ -261,6 +293,7 @@ export class QuestRecordService {
       note: record.note,
       imageUrl: record.imageUrl,
       acceptedAt: record.acceptedAt,
+      deadlineAt: record.deadlineAt,
       completedAt: record.completedAt,
       abandonedAt: record.abandonedAt,
       target:

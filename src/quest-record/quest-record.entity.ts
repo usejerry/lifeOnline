@@ -18,6 +18,7 @@ export enum QuestRecordStatus {
 }
 
 @Entity('quest_record')
+@Index('idx_record_status_deadline_id', ['status', 'deadlineAt', 'id'])
 @Index('idx_record_user_status_created', ['userId', 'status', 'createdAt'])
 export class QuestRecord {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -132,6 +133,10 @@ export class QuestRecord {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
+
+  // 任务截止时间
+  @Column({ name: 'deadline_at', type: 'datetime', nullable: true })
+  deadlineAt!: Date | null;
 
   @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

@@ -6,6 +6,7 @@ import { QuestRecord } from './quest-record.entity';
 import { QuestRecordService } from './quest-record.service';
 import { LocationModule } from '../location/location.module';
 import { QuestLibraryModule } from '../quest-library/quest-library.module';
+import { QuestRecordExpiryService } from './quest-record-expiry.service';
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { QuestLibraryModule } from '../quest-library/quest-library.module';
     QuestLibraryModule,
   ],
   controllers: [QuestRecordController],
-  providers: [QuestRecordService],
+  providers: [QuestRecordService, QuestRecordExpiryService],
 })
 export class QuestRecordModule {}
